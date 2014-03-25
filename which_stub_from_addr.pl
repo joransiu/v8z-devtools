@@ -41,8 +41,10 @@ while (my $line = readline($trace_file)) {
 }
 
 if (defined $stub_hash{$addr}) {
-  print "$addr - $stub_hash{$addr}\n";
+  print "0x$addr - $stub_hash{$addr}\n";
+  exit 0;
 } else {
-  print STDERR "Address $addr not found.\n";
+  print STDERR "Address 0x$addr not found.\n";
+  exit 1;
 }
 
