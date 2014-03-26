@@ -58,14 +58,14 @@ while (my $line = readline($gdb_trace_file)) {
          $invoke_count++;
       } 
       chomp($line);
-      printf  ("%05d %s %-60s %s\n",$counter, $address, $instruction, $stub_hash{$address});
+      printf  ("%05d %s %-40s %s\n",$counter, $address, $instruction, $stub_hash{$address});
 
       if ($instruction =~ m/basr\s+%r14,%r7/) {
-         print "Call RTFunction\n";
+         print "Call to host function\n";
          if ($stub_info =~ m/CEntryStub\+/) {
          # Calls to Runtime routines has an extra counter bump in simulator
-         $counter++;
- }
+           $counter++;
+         }
       }
     }
     $counter++;
