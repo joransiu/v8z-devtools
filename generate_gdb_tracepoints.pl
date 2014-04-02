@@ -20,6 +20,7 @@ my $invoke_count = 1;
 my $current_break_addr;
 my $current_break_count = 0;
 my $break_on_next = 0;
+my $CEntryStub_branch_point = 0;
 my $issue_break_point = 0;
 
 my $num_break_points = 1; # Start with one for brentry
@@ -29,9 +30,12 @@ sub printBreakPoint{
   my($addr, $num_instr, @commands) = @_;
   print "break *0x$current_break_addr\n";
   print "commands\n";
+  foreach (@commands) {
+    print "$_\n";
+  }
   print "x/".$num_instr."i \$pc\n";
   print "cont\n";
-  print "end\n");
+  print "end\n";
 }
 
 while (my $line = readline($trace_file)) {
@@ -72,7 +76,16 @@ while (my $line = readline($trace_file)) {
       # for prior sequence
       if ($break_on_next == 0 && defined $forward_reloc_hash{$address}) {
         #print ("break *0x$current_break_addr\ncommands\nx/".$current_break_count."i \$pc\ncont\nend\n");
-        printBreakPoint($current_break_addr, $current_break_count);
+        my @commands;
+       
+        if ($CEntryStub_branch_point == 1) {
+          push @commands,'disable br',"br *$address";
+          $CEntryStub_branch_point++;
+        } elsif ($CEntryStub_branch_point == 2) {
+          push @commands,'enable br';
+          $CEntryStub_branch_point = 0;
+        }
+        printBreakPoint($current_break_addr, $current_break_count, @commands);
       }
       $current_break_addr = $address;
       $current_break_count = 0;
@@ -105,11 +118,13 @@ while (my $line = readline($trace_file)) {
             } elsif ($cur_address eq $branch_target) {
               # We have not emitted a break point from branch target
               if (!defined $last_break_addr) {
-                print ("break *0x$current_break_addr\ncommands\nx/".($current_break_count-$num_instr)."i \$pc\ncont\nend\n");
+#                print ("break *0x$current_break_addr\ncommands\nx/".($current_break_count-$num_instr)."i \$pc\ncont\nend\n");
+                printBreakPoint($current_break_addr, ($current_break_count - $num_instr));
                 $current_break_addr = $branch_target;
                 $current_break_count = $num_instr;
               } else {
                 print ("break *0x$branch_target\ncommands\nx/".$num_instr."i \$pc\ncont\nend\n");
+                printBreakPoint($branch_target, $num_instr);
               }
               $break_addr_hash{$branch_target} = 1;
               last;
@@ -117,9 +132,10 @@ while (my $line = readline($trace_file)) {
             $num_instr++;
           }
         }
-      } elsif ($mnemonic =~ m/^basr r14,r7/) {
+      } elsif ($mnemonic =~ m/^basr\s+r14,r7/) {
         # Special handling of breakpoints for CEntryStub
         if ($stub_name =~ m/CEntryStub/) {
+          $CEntryStub_branch_point = 1;
         }
       }
     }
@@ -128,6 +144,7 @@ while (my $line = readline($trace_file)) {
 
   if ($issue_break_point != 0) {
     print ("break *0x$current_break_addr\ncommands\nx/".$current_break_count."i \$pc\ncont\nend\n");
+    printBreakPoint($current_break_addr, $current_break_count);
     $issue_break_point = 0;
   }
 }
