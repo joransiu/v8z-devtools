@@ -18,6 +18,7 @@ my %stub_hash = ();
 my %function_hash = ();
 my $stub_name = '';
 my $invoke_count = 1;
+my $call_output = 0;
 while (my $line = readline($trace_file)) {
   my $print_line = 1;
   # Found STUB/BUILTIN name
@@ -62,14 +63,26 @@ while (my $line = readline($trace_file)) {
       # This is a native call, we want to have it in the trace.
       print STDERR $line;
       $print_line = 0;
+      $call_output = 1;
   } elsif ($line =~ m/^\s+args /) {
+    if ($call_output) {
       # This is arguments for a native call, we want to ahve it in trace
       print STDERR $line;
       $print_line = 0;
+    }
   } elsif ($line =~ m/^Returned /) {
+    if ($call_output) {
       # This is return argument for a native call.
       print STDERR $line;
       $print_line = 0;
+      $call_output = 0;
+    }
+  } elsif ($line =~ m/^\s+\d+:\s+/) {
+    if ($call_output) {
+      # This is the name of the called function
+      print STDERR $line;
+      $print_line = 0;
+    }
   }
   if ($print_line) {
     print $line;

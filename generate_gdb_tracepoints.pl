@@ -22,6 +22,18 @@ my $current_break_count = 0;
 my $break_on_next = 0;
 my $issue_break_point = 0;
 
+my $num_break_points = 1; # Start with one for brentry
+sub printBreakPoint{
+  $num_break_points++;
+  
+  my($addr, $num_instr, @commands) = @_;
+  print "break *0x$current_break_addr\n";
+  print "commands\n";
+  print "x/".$num_instr."i \$pc\n";
+  print "cont\n";
+  print "end\n");
+}
+
 while (my $line = readline($trace_file)) {
   my $print_line = 1;
   # Found STUB/BUILTIN name
@@ -59,7 +71,8 @@ while (my $line = readline($trace_file)) {
       # Forward relocation scenario, we need to generate print
       # for prior sequence
       if ($break_on_next == 0 && defined $forward_reloc_hash{$address}) {
-        print ("break *0x$current_break_addr\ncommands\nx/".$current_break_count."i \$pc\ncont\nend\n");
+        #print ("break *0x$current_break_addr\ncommands\nx/".$current_break_count."i \$pc\ncont\nend\n");
+        printBreakPoint($current_break_addr, $current_break_count);
       }
       $current_break_addr = $address;
       $current_break_count = 0;
@@ -70,6 +83,7 @@ while (my $line = readline($trace_file)) {
       $break_on_next = 1;
       $issue_break_point = 1;
 
+      
       # Handle relative branches
       if ($mnemonic =~ m/^brc[lt]?.*,\*\+[0-9]+ .*\(0x([0-9a-f]+)\)/) {
         # Forward relative branch.
@@ -102,6 +116,10 @@ while (my $line = readline($trace_file)) {
             }
             $num_instr++;
           }
+        }
+      } elsif ($mnemonic =~ m/^basr r14,r7/) {
+        # Special handling of breakpoints for CEntryStub
+        if ($stub_name =~ m/CEntryStub/) {
         }
       }
     }
