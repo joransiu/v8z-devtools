@@ -2,12 +2,12 @@
 use strict;
 use warnings;
 
-# Script to annotate a v8 simulator trace log with the location of the
+# Script to annotate a v8 gdb trace log with the location of the
 # stubs/builtins + offset.
 #  Generate a v8 trace with:
-#     d8 --trace_sim --print_code_stubs --print_all_code > sim_trace.txt
+#     d8 --print_code_stubs --print_all_code > print_stubs.txt
 #  Run this script:
-#     annotate_gdb_trace.pl sim_trace.txt gdb.txt > stubs.txt  2> trace.txt
+#     annotate_gdb_trace.pl print_stubs.txt gdb.txt > stubs.txt  2> trace.txt
 #  Currently, STDOUT prints stubs output, STDERR prints annotated trace.
 
 
