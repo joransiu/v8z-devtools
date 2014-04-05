@@ -7,7 +7,7 @@ use warnings;
 #  Generate a v8 trace with:
 #     d8 --print_code_stubs --print_all_code > print_stubs.txt
 #  Run this script:
-#     annotate_gdb_trace.pl print_stubs.txt gdb.txt > stubs.txt  2> trace.txt
+#     annotate_gdb_trace.pl print_stubs.txt gdb.txt [init_counter] > stubs.txt  2> trace.txt
 #  Currently, STDOUT prints stubs output, STDERR prints annotated trace.
 
 
@@ -20,6 +20,11 @@ my %stub_hash = ();
 my %function_hash = ();
 my $stub_name = '';
 my $invoke_count = 1;
+
+my $counter = 1;
+if ($#ARGV == 2) {
+  $counter = $ARGV[2];
+}
 while (my $line = readline($trace_file)) {
   # Found STUB/BUILTIN name
   if ($line =~ m/^name = (\w+)/) { 
@@ -40,7 +45,6 @@ while (my $line = readline($trace_file)) {
   }
 }
 
-my $counter = 1;
 while (my $line = readline($gdb_trace_file)) {
   if ($line =~ m/^[=> ]+0x([a-f0-9]+):(.*)$/) {
     if (defined $stub_hash{$1}) {
