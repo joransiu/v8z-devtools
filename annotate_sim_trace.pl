@@ -19,6 +19,7 @@ my %function_hash = ();
 my $stub_name = '';
 my $invoke_count = 1;
 my $call_output = 0;
+my $unrecognized_function = 0;
 while (my $line = readline($trace_file)) {
   my $print_line = 1;
   # Found STUB/BUILTIN name
@@ -35,7 +36,22 @@ while (my $line = readline($trace_file)) {
     } else {
       $function_hash{$stub_name} = 2;
     }
+    $unrecognized_function = 0;
+  } elsif ($line =~ m/^kind = FUNCTION/) {
+    $unrecognized_function = 1;
+    $stub_name = "unnamed_function";
   } elsif ($line =~ m/^0x([0-9a-f]+) +([0-9]+) +/) {
+    if ($unrecognized_function == 1) {
+      if (defined $function_hash{$stub_name}) {
+        my $orig_stub_name = $stub_name;
+        $line .= "_".$function_hash{$orig_stub_name}."\n";
+        $stub_name .= "_".$function_hash{$orig_stub_name};
+        $function_hash{$orig_stub_name}++;
+      } else {
+        $function_hash{$stub_name} = 2;
+      }
+      $unrecognized_function = 0;
+    }
     $stub_hash{$1} = "<$stub_name+$2>";
   } elsif ($line =~ m/^([0-9]+) +([a-f0-9]+) +/) {
     if (defined $stub_hash{$2}) {

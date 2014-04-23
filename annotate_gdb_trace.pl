@@ -25,6 +25,7 @@ my $counter = 1;
 if ($#ARGV == 2) {
   $counter = $ARGV[2];
 }
+my $last_JSEntryAddress = 0;
 while (my $line = readline($trace_file)) {
   # Found STUB/BUILTIN name
   if ($line =~ m/^name = (\w+)/) { 
@@ -42,9 +43,14 @@ while (my $line = readline($trace_file)) {
     }
   } elsif ($line =~ m/^0x([0-9a-f]+) +([0-9]+) +/) {
     $stub_hash{$1} = "<$stub_name+$2>";
+    my $address = $1;
+     if ($stub_name =~ m/JSEntryStub/) {
+       $last_JSEntryAddress = $address;
+     }
   }
 }
 
+my $invoke_depth = 1;
 while (my $line = readline($gdb_trace_file)) {
   if ($line =~ m/^[=> ]+0x([a-f0-9]+):(.*)$/) {
     if (defined $stub_hash{$1}) {
@@ -55,14 +61,21 @@ while (my $line = readline($gdb_trace_file)) {
       $instruction =~ s/\t/ /;
       my $stub_info = $stub_hash{$address};
       if ($stub_info =~ m/JSEntryStub\+0/) {
-         print "\n===========> INVOKE:$invoke_count\n";
+         print "\n===========> INVOKE:$invoke_count (depth: $invoke_depth)\n";
          $invoke_count++;
+         $invoke_depth++;
       } elsif ($stub_info =~ m/JSConstructEntryStub\+0/) {
-         print "\n===========> INVOKE:$invoke_count (is_construct)\n";
+         print "\n===========> INVOKE:$invoke_count (is_construct) (depth: $invoke_depth)\n";
          $invoke_count++;
-      } 
+         $invoke_depth++;
+      }
       chomp($line);
-      printf  ("%05d %s %-40s %s\n",$counter, $address, $instruction, $stub_hash{$address});
+
+      my $tabs = "";
+      for (my $i = 1; $i < $invoke_depth; $i++) {
+        $tabs .= "  ";
+      }
+      printf  ("$tabs%05d %s %-40s %s\n",$counter, $address, $instruction, $stub_hash{$address});
 
       if ($instruction =~ m/basr\s+%r14,%r7/) {
          print "Call to host function\n";
@@ -70,6 +83,9 @@ while (my $line = readline($gdb_trace_file)) {
          # Calls to Runtime routines has an extra counter bump in simulator
            $counter++;
          }
+      } elsif ($address eq $last_JSEntryAddress) {
+         $invoke_depth--;
+         print "<========== JSEntryStub Return (depth: $invoke_depth)\n\n";
       }
     }
     $counter++;
