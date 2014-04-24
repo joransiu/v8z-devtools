@@ -20,6 +20,8 @@ my $stub_name = '';
 my $invoke_count = 1;
 my $call_output = 0;
 my $unrecognized_function = 0;
+my $last_JSEntryAddress = 0;
+my $invoke_depth = 1;
 while (my $line = readline($trace_file)) {
   my $print_line = 1;
   # Found STUB/BUILTIN name
@@ -53,21 +55,35 @@ while (my $line = readline($trace_file)) {
       $unrecognized_function = 0;
     }
     $stub_hash{$1} = "<$stub_name+$2>";
+    my $address = $1;
+     if ($stub_name =~ m/JSEntryStub/) {
+       $last_JSEntryAddress = $address;
+     }
   } elsif ($line =~ m/^([0-9]+) +([a-f0-9]+) +/) {
     if (defined $stub_hash{$2}) {
       # Print INVOKE line if it's JSEntryStub+0
       my $address = $2;
       my $stub_info = $stub_hash{$address};
       if ($stub_info =~ m/JSEntryStub\+0/) {
-         print STDERR "\n===========> INVOKE:$invoke_count\n";
+         print STDERR "\n===========> INVOKE:$invoke_count (depth: $invoke_depth)\n";
          $invoke_count++;
+         $invoke_depth++;
       } elsif ($stub_info =~ m/JSConstructEntryStub\+0/) {
-         print STDERR "\n===========> INVOKE:$invoke_count (is_construct)\n";
+         print STDERR "\n===========> INVOKE:$invoke_count (is_construct) (depth: $invoke_depth)\n";
          $invoke_count++;
+         $invoke_depth++;
       }
       chomp($line);
-      printf STDERR ("%-60s %s\n",$line, $stub_hash{$address});
+      my $tabs = "";
+      for (my $i = 1; $i < $invoke_depth; $i++) {
+        $tabs .= "  ";
+      }
+      printf STDERR ("$tabs%-60s %s\n",$line, $stub_hash{$address});
       $print_line = 0;
+      if ($address eq $last_JSEntryAddress) {
+         $invoke_depth--;
+         print STDERR "<========== JSEntryStub Return (depth: $invoke_depth)\n\n";
+      }
     }
     elsif ($line =~ m/ call rt redirected/) {
       # For redirected calls, we want to also print the next 3 lines
