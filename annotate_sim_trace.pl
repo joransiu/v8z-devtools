@@ -21,7 +21,7 @@ my $invoke_count = 1;
 my $call_output = 0;
 my $unrecognized_function = 0;
 my $last_JSEntryAddress = 0;
-my $invoke_depth = 1;
+my $invoke_depth = 0;
 while (my $line = readline($trace_file)) {
   my $print_line = 1;
   # Found STUB/BUILTIN name
@@ -78,7 +78,7 @@ while (my $line = readline($trace_file)) {
       for (my $i = 1; $i < $invoke_depth; $i++) {
         $tabs .= "  ";
       }
-      printf STDERR ("$tabs%-60s %s\n",$line, $stub_hash{$address});
+      printf STDERR ("%s%2s: %-60s %s\n",$tabs, $invoke_depth - 1, $line, $stub_hash{$address});
       $print_line = 0;
       if ($address eq $last_JSEntryAddress) {
          $invoke_depth--;
