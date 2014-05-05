@@ -25,7 +25,7 @@ my $invoke_depth = 0;
 while (my $line = readline($trace_file)) {
   my $print_line = 1;
   # Found STUB/BUILTIN name
-  if ($line =~ m/^name = (\w+)/) { 
+  if ($line =~ m/^name = ([\w.]+)/) { 
     $stub_name = $1;
     # We may compile stubs multiple times, so increment counter
     # and track them.
@@ -39,7 +39,7 @@ while (my $line = readline($trace_file)) {
       $function_hash{$stub_name} = 2;
     }
     $unrecognized_function = 0;
-  } elsif ($line =~ m/^kind = FUNCTION/) {
+  } elsif ($line =~ m/^kind = .*FUNCTION/) {
     $unrecognized_function = 1;
     $stub_name = "unnamed_function";
   } elsif ($line =~ m/^0x([0-9a-f]+) +([0-9]+) +/) {
@@ -61,17 +61,17 @@ while (my $line = readline($trace_file)) {
      }
   } elsif ($line =~ m/^([0-9]+) +([a-f0-9]+) +/) {
     if (defined $stub_hash{$2}) {
-      # Print INVOKE line if it's JSEntryStub+0
+# Print INVOKE line if it's JSEntryStub+0
       my $address = $2;
       my $stub_info = $stub_hash{$address};
       if ($stub_info =~ m/JSEntryStub\+0/) {
-         print STDERR "\n===========> INVOKE:$invoke_count (depth: $invoke_depth)\n";
-         $invoke_count++;
-         $invoke_depth++;
+        print STDERR "\n===========> INVOKE:$invoke_count (depth: $invoke_depth)\n";
+        $invoke_count++;
+        $invoke_depth++;
       } elsif ($stub_info =~ m/JSConstructEntryStub\+0/) {
-         print STDERR "\n===========> INVOKE:$invoke_count (is_construct) (depth: $invoke_depth)\n";
-         $invoke_count++;
-         $invoke_depth++;
+        print STDERR "\n===========> INVOKE:$invoke_count (is_construct) (depth: $invoke_depth)\n";
+        $invoke_count++;
+        $invoke_depth++;
       }
       chomp($line);
       my $tabs = "";
@@ -81,21 +81,20 @@ while (my $line = readline($trace_file)) {
       printf STDERR ("%s%2s: %-60s %s\n",$tabs, $invoke_depth - 1, $line, $stub_hash{$address});
       $print_line = 0;
       if ($address eq $last_JSEntryAddress) {
-         $invoke_depth--;
-         print STDERR "<========== JSEntryStub Return (depth: $invoke_depth)\n\n";
+        $invoke_depth--;
+        print STDERR "<========== JSEntryStub Return (depth: $invoke_depth)\n\n";
       }
     }
-    elsif ($line =~ m/ call rt redirected/) {
-      # For redirected calls, we want to also print the next 3 lines
-      # for function, args and return values.
-      print STDERR $line;
-      $print_line = 0;
-    }
+  } elsif ($line =~ m/ call rt redirected/) {
+    # For redirected calls, we want to also print the next 3 lines
+    # for function, args and return values.
+    print STDERR $line;
+    $print_line = 0;
   } elsif ($line =~ m/Call to host function/) {
-      # This is a native call, we want to have it in the trace.
-      print STDERR $line;
-      $print_line = 0;
-      $call_output = 1;
+    # This is a native call, we want to have it in the trace.
+    print STDERR $line;
+    $print_line = 0;
+    $call_output = 1;
   } elsif ($line =~ m/^\s+args /) {
     if ($call_output) {
       # This is arguments for a native call, we want to ahve it in trace
