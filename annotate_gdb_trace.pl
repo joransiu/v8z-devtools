@@ -28,7 +28,7 @@ if ($#ARGV == 2) {
 my $last_JSEntryAddress = 0;
 while (my $line = readline($trace_file)) {
   # Found STUB/BUILTIN name
-  if ($line =~ m/^name = (\w+)/) { 
+  if ($line =~ m/^name = ([\w.]+)/) { 
     $stub_name = $1;
     # We may compile stubs multiple times, so increment counter
     # and track them.
