@@ -5,7 +5,7 @@ use warnings;
 # Script to annotate a v8 simulator trace log with the location of the
 # stubs/builtins + offset.
 #  Generate a v8 trace with:
-#     d8 --trace_sim --print_code_stubs --print_all_code > sim_trace.txt
+#     d8 --trace_sim --print_all_code > sim_trace.txt
 #  Run this script:
 #     annotate_sim_trace.pl sim_trace.txt > stubs.txt  2> trace.txt
 #  Currently, STDOUT prints stubs output, STDERR prints annotated trace.
@@ -84,6 +84,16 @@ while (my $line = readline($trace_file)) {
         $invoke_depth--;
         print STDERR "<========== JSEntryStub Return (depth: $invoke_depth)\n\n";
       }
+    } else {
+      # Still print the line out even if we don't find mapping, as snapshot
+      # may be on.
+      chomp($line);
+      my $tabs = "";
+      for (my $i = 1; $i < $invoke_depth; $i++) {
+        $tabs .= "  ";
+      }
+      printf STDERR ("%s%2s: %-60s\n",$tabs, $invoke_depth - 1, $line);
+      $print_line = 0;
     }
   } elsif ($line =~ m/ call rt redirected/) {
     # For redirected calls, we want to also print the next 3 lines
