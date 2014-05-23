@@ -86,7 +86,7 @@ while (my $line = readline($trace_file)) {
       }
     } else {
       # Still print the line out even if we don't find mapping, as snapshot
-      # may be on.
+      # may be on or we didn't print stubs properly yet.
       chomp($line);
       my $tabs = "";
       for (my $i = 1; $i < $invoke_depth; $i++) {
