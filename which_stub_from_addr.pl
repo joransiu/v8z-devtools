@@ -12,6 +12,9 @@ my $addr = $ARGV[0];
 # Trim any leading 0x chars
 $addr =~ s/^0x//;
 
+# Trim leading zeros.
+$addr =~ s/^[0]+//;
+
 my $input_file = $ARGV[1];
 open (my $trace_file, "<", $input_file)  || die "Can't open $input_file: $!\n";
 
