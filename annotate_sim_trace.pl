@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use bignum;
+use Math::Int64 qw(int64 uint64 hex_to_int64);
 
 # Script to annotate a v8 simulator trace log with the location of the
 # stubs/builtins + offset.
@@ -20,6 +22,8 @@ my $stub_name = '';
 my $invoke_count = 1;
 my $call_output = 0;
 my $unrecognized_function = 0;
+my $optimized_function = 0;
+my $optimization_id = 0;
 my $last_JSEntryAddress = 0;
 my $invoke_depth = 0;
 while (my $line = readline($trace_file)) {
@@ -29,6 +33,10 @@ while (my $line = readline($trace_file)) {
     $stub_name = $1;
     # We may compile stubs multiple times, so increment counter
     # and track them.
+    if ($optimized_function == 1) {
+      $stub_name .= "_OPTID_$optimization_id";
+      $optimized_function = 0;
+    }
     if (defined $function_hash{$stub_name}) {
       chomp($line);
       my $orig_stub_name = $stub_name;
@@ -39,6 +47,9 @@ while (my $line = readline($trace_file)) {
       $function_hash{$stub_name} = 2;
     }
     $unrecognized_function = 0;
+  } elsif ($line =~ m/^optimization_id = (\d+)/) {
+    $optimized_function = 1;
+    $optimization_id = $1;
   } elsif ($line =~ m/^kind = .*FUNCTION/) {
     $unrecognized_function = 1;
     $stub_name = "unnamed_function";
@@ -54,15 +65,15 @@ while (my $line = readline($trace_file)) {
       }
       $unrecognized_function = 0;
     }
-    $stub_hash{$1} = "<$stub_name+$2>";
-    my $address = $1;
+    my $address = hex_to_int64('0x'. $1);
+    $stub_hash{$address} = "<$stub_name+$2>";
      if ($stub_name =~ m/JSEntryStub/) {
        $last_JSEntryAddress = $address;
      }
   } elsif ($line =~ m/^([0-9]+) +([a-f0-9]+) +/) {
-    if (defined $stub_hash{$2}) {
+    my $address = hex_to_int64('0x'. $2);
+    if (defined $stub_hash{$address}) {
 # Print INVOKE line if it's JSEntryStub+0
-      my $address = $2;
       my $stub_info = $stub_hash{$address};
       if ($stub_info =~ m/JSEntryStub\+0/) {
         print STDERR "\n===========> INVOKE:$invoke_count (depth: $invoke_depth)\n";
