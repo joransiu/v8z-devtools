@@ -26,11 +26,17 @@ my $optimized_function = 0;
 my $optimization_id = 0;
 my $last_JSEntryAddress = 0;
 my $invoke_depth = 0;
+my $kind = '';
+
 while (my $line = readline($trace_file)) {
   my $print_line = 1;
   # Found STUB/BUILTIN name
-  if ($line =~ m/^name = ([\w.]+)/) { 
+  if ($line =~ m/^name = (.+)/) {
     $stub_name = $1;
+    $stub_name =~ s/[^\w\d]/_/g;
+    if ($kind =~ m/REGEXP/) {
+      $stub_name = $kind . $stub_name;
+    }
     # We may compile stubs multiple times, so increment counter
     # and track them.
     if ($optimized_function == 1) {
@@ -51,8 +57,12 @@ while (my $line = readline($trace_file)) {
     $optimized_function = 1;
     $optimization_id = $1;
   } elsif ($line =~ m/^kind = .*FUNCTION/) {
+    $kind = $1;
     $unrecognized_function = 1;
     $stub_name = "unnamed_function";
+  } elsif ($line =~ m/^kind = (.+)/) {
+    $kind = $1;
+    print ("KIND = $kind\n");
   } elsif ($line =~ m/^0x([0-9a-f]+) +([0-9]+) +/) {
     if ($unrecognized_function == 1) {
       if (defined $function_hash{$stub_name}) {
