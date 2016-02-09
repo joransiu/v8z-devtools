@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 use bignum;
-use Math::Int64 qw(int64 uint64 hex_to_int64);
 
 # Script to annotate a v8 simulator trace log with the location of the
 # stubs/builtins + offset.
@@ -75,13 +74,13 @@ while (my $line = readline($trace_file)) {
       }
       $unrecognized_function = 0;
     }
-    my $address = hex_to_int64('0x'. $1);
+    my $address = hex('0x'. $1);
     $stub_hash{$address} = "<$stub_name+$2>";
      if ($stub_name =~ m/JSEntryStub/) {
        $last_JSEntryAddress = $address;
      }
   } elsif ($line =~ m/^([0-9]+) +([a-f0-9]+) +/) {
-    my $address = hex_to_int64('0x'. $2);
+    my $address = hex('0x'. $2);
     if (defined $stub_hash{$address}) {
 # Print INVOKE line if it's JSEntryStub+0
       my $stub_info = $stub_hash{$address};
