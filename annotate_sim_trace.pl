@@ -62,7 +62,8 @@ while (my $line = readline($trace_file)) {
   } elsif ($line =~ m/^kind = (.+)/) {
     $kind = $1;
     print ("KIND = $kind\n");
-  } elsif ($line =~ m/^0x([0-9a-f]+) +([0-9]+) +/) {
+  } elsif ($line =~ m/^0x([0-9a-fA-F]+) +([0-9]+) +/ or
+           $line =~ m/^([0-9a-fA-F]+) +([0-9]+) +/) {
     if ($unrecognized_function == 1) {
       if (defined $function_hash{$stub_name}) {
         my $orig_stub_name = $stub_name;
@@ -74,13 +75,13 @@ while (my $line = readline($trace_file)) {
       }
       $unrecognized_function = 0;
     }
-    my $address = hex('0x'. $1);
+    my $address = Math::BigInt->new('0x'. $1);
     $stub_hash{$address} = "<$stub_name+$2>";
      if ($stub_name =~ m/JSEntryStub/) {
        $last_JSEntryAddress = $address;
      }
   } elsif ($line =~ m/^([0-9]+) +([a-f0-9]+) +/) {
-    my $address = hex('0x'. $2);
+    my $address = Math::BigInt->new('0x'. $2);
     if (defined $stub_hash{$address}) {
 # Print INVOKE line if it's JSEntryStub+0
       my $stub_info = $stub_hash{$address};
