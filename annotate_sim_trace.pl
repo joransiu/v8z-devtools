@@ -85,7 +85,8 @@ while (my $line = readline($trace_file)) {
     if (defined $stub_hash{$address}) {
 # Print INVOKE line if it's JSEntryStub+0
       my $stub_info = $stub_hash{$address};
-      if ($stub_info =~ m/JSEntryStub\+0/) {
+      my $offset = "$^O" eq "os390" ? 16 : 0;
+      if ($stub_info =~ m/JSEntryStub\+$offset/) {
         print STDERR "\n===========> INVOKE:$invoke_count (depth: $invoke_depth)\n";
         $invoke_count++;
         $invoke_depth++;
