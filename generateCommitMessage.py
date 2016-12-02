@@ -13,11 +13,15 @@ def commitMessage(commitHash):
   originalHash = subprocess.check_output(["git", "log", str(commitHash), "--pretty=format:%H", '-1'] ).strip()
   commitTitle = subprocess.check_output(["git", "log", str(commitHash), "--pretty=format:%s", '-1'] ).strip()
   originalCommiterEmail= subprocess.check_output(["git", "log", str(commitHash), "--pretty=format:%ae", '-1'] ).strip()
+  portUploaderEmail= subprocess.check_output(["git", "config", "user.email"]).strip()
   
   originalCommitMessage = subprocess.check_output(["git", "log", str(commitHash), "--pretty=format:\%B", "-1"]).split("\n")
-
   # Parse the originalCommitMessage Tags
   originalCommitMessage = filter(lambda text : (len(text) == 0 or not (text[0] == '#' or text.isspace())), originalCommitMessage)
+
+  reviewerList=['joransiu@ca.ibm.com', 'jyan@ca.ibm.com', 'bjaideep@ca.ibm.com', 'michael_dawson@ca.ibm.com']
+  if portUploaderEmail in reviewerList:
+    reviewerList.remove(portUploaderEmail)
 
   commitInfo = {}
 
@@ -48,7 +52,7 @@ def commitMessage(commitHash):
       message += "    " + line + "\n"
 
   message += "\n"
-  message += "R="+originalCommiterEmail+", joransiu@ca.ibm.com, jyan@ca.ibm.com, bjaideep@ca.ibm.com, michael_dawson@ca.ibm.com\n"
+  message += "R="+originalCommiterEmail+", "+(", ").join(reviewerList)+"\n"
   if "BUG=" in commitInfo.keys():
     message += "BUG="+commitInfo["BUG="]+"\n"
   else:
