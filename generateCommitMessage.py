@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/python
 
 #
 # A script that automatically generate a message for 
