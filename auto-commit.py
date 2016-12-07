@@ -1,12 +1,9 @@
 #!/usr/bin/python
-
 #
-# A script that automatically generate a message for 
-# upstreaming given the original commit hash.
-#
-
-
-import subprocess
+# Automatically commit and upload to chromium code reviews.
+# Need to be run under the root of a v8 repo, and generateCommitMessage.py
+from __future__ import print_function
+import subprocess, sys, os
 import re
 
 def commitMessage(commitHash):
@@ -60,10 +57,54 @@ def commitMessage(commitHash):
   message += "LOG=N"
   return message
 
+def printError(exitCode, *args, **kwargs):
+  print(__file__, end = ':')
+  print(*args, file = sys.stderr, **kwargs)
+  if exitCode:
+    print("(last executed command exit code = " + str(exitCode) + ")")
 
-if __name__ == "__main__":
+def runCommand(command, stdout = None, stderr = None,\
+              errorMessage = None, workingDirectory = os.getcwd()):
+  if not errorMessage:
+    errorMessage = " ".join(command) + " failed." 
+  try:
+    print(" ".join(command))
+    if not DRY_RUN:
+      subprocess.check_call(command,stdout = stdout, stderr = stderr, cwd = workingDirectory)
+  except subprocess.CalledProcessError as e:
+    printError(e.returncode,errorMessage)
+    exit(1)
+
+def runLintTest():
+  runCommand(["python", "tools/presubmit.py"], errorMessage = "Lint check failed.")
+
+  
+def commitAndUpload(gitAddArgList, portHash):
+  runCommand(["git","add"] + gitAddArgList)
+  cm = commitMessage(portHash)
+  print("Commit message is:\n", cm)
+  print("git","commit","--file","-")
+  if not DRY_RUN:
+    p = subprocess.Popen(["git","commit", "--file", "-"], stdin=subprocess.PIPE)
+    p.communicate(input = cm)
+  runCommand(["git","cl","upload"])
+
+def Main():
   import argparse
-  parser=argparse.ArgumentParser(description="A script for generating port commit messages")
-  parser.add_argument('commitHash', type = str, help = "the hash for the commit")
+  parser = argparse.ArgumentParser(description = "A script for automatically performing cl upload.")
+  parser.add_argument('portHash', type = str, help = "The commit hash to be ported")
+  parser.add_argument('git_add_args', nargs = '+', help = \
+  "Arguments to be appended to command git add. if the argument start with a dash ('-'), the arguments must start with --.")
+  parser.add_argument('-D','--dryrun', action = 'store_true', help = "Do not run the commands, just output them")
+  parser.add_argument('-C','--commit_message_only', action = 'store_true', help = "Just print the commit message")
   args = parser.parse_args()
-  print commitMessage(args.commitHash)
+  global DRY_RUN
+  DRY_RUN = args.dryrun
+  if args.commit_message_only:
+    print(commitMessage(args.portHash))
+    exit(0)
+  runLintTest()
+  commitAndUpload(args.git_add_args,args.portHash)
+
+if __name__=="__main__":
+  Main()
