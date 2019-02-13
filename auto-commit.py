@@ -11,12 +11,12 @@ def commitMessage(commitHash):
   commitTitle = subprocess.check_output(["git", "log", str(commitHash), "--pretty=format:%s", '-1'] ).strip()
   originalCommiterEmail= subprocess.check_output(["git", "log", str(commitHash), "--pretty=format:%ae", '-1'] ).strip()
   portUploaderEmail= subprocess.check_output(["git", "config", "user.email"]).strip()
-  
+
   originalCommitMessage = subprocess.check_output(["git", "log", str(commitHash), "--pretty=format:\%B", "-1"]).split("\n")
   # Parse the originalCommitMessage Tags
   originalCommitMessage = filter(lambda text : (len(text) == 0 or not (text[0] == '#' or text.isspace())), originalCommitMessage)
 
-  reviewerList=['joransiu@ca.ibm.com', 'jyan@ca.ibm.com', 'bjaideep@ca.ibm.com', 'michael_dawson@ca.ibm.com']
+  reviewerList=['joransiu@ca.ibm.com', 'jyan@ca.ibm.com', 'michael_dawson@ca.ibm.com', 'miladfar@ca.ibm.com']
   if portUploaderEmail in reviewerList:
     reviewerList.remove(portUploaderEmail)
 
@@ -66,7 +66,7 @@ def printError(exitCode, *args, **kwargs):
 def runCommand(command, stdout = None, stderr = None,\
               errorMessage = None, workingDirectory = os.getcwd()):
   if not errorMessage:
-    errorMessage = " ".join(command) + " failed." 
+    errorMessage = " ".join(command) + " failed."
   try:
     print(" ".join(command))
     if not DRY_RUN:
@@ -78,7 +78,7 @@ def runCommand(command, stdout = None, stderr = None,\
 def runLintTest():
   runCommand(["python", "tools/presubmit.py"], errorMessage = "Lint check failed.")
 
-  
+
 def commitAndUpload(gitAddArgList, portHash):
   runCommand(["git","add"] + gitAddArgList)
   cm = commitMessage(portHash)
