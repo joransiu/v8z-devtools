@@ -16,7 +16,7 @@ def commitMessage(commitHash):
   # Parse the originalCommitMessage Tags
   originalCommitMessage = filter(lambda text : (len(text) == 0 or not (text[0] == '#' or text.isspace())), originalCommitMessage)
 
-  reviewerList=['joransiu@ca.ibm.com', 'jyan@ca.ibm.com', 'michael_dawson@ca.ibm.com', 'miladfar@ca.ibm.com']
+  reviewerList=['joransiu@ca.ibm.com', 'junyan@redhat.com', 'midawson@redhat.com', 'mfarazma@redhat.com']
   if portUploaderEmail in reviewerList:
     reviewerList.remove(portUploaderEmail)
 
